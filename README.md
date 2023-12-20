@@ -1,6 +1,9 @@
 # Projet Design Pattern - Pacman
 Thomas Landais - Projet universitaire dans le cadre du M1 informatique à l'université d'Angers
 
+![Description de l'image](/pacman.png)
+
+
 ## Description
 
 Ce projet implémente une version interactive du jeu classique Pacman avec une interface graphique. Le jeu suit les règles traditionnelles de Pacman, avec des agents Pacman et fantômes évoluant dans un labyrinthe.
