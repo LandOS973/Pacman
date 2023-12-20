@@ -28,6 +28,7 @@ public class PacmanGame extends Game {
     private String mapName;
     private int timer;
     private boolean win;
+    private static int life = 2;
 
     private static PacmanGame instance;
 
@@ -53,8 +54,12 @@ public class PacmanGame extends Game {
         return instance;
     }
 
+    public static int getNumberOfLife(){
+        return life;
+    }
+
     public AgentStrategy askPacmanStrategy() {
-        String[] strategies = { "EatAndRun", "Random", "Player" };
+        String[] strategies = {"Player", "EatAndRun", "Random" };
         String chosenStrategy = (String) JOptionPane.showInputDialog(null, 
             "Choisissez la stratégie pour Pacman:", 
             "Sélection de la Stratégie", 
@@ -64,7 +69,7 @@ public class PacmanGame extends Game {
             strategies[0]);
         
         if(chosenStrategy == null){
-            chosenStrategy = "EatAndRun";
+            chosenStrategy = "Player";
         }
 
         switch (chosenStrategy) {
@@ -75,7 +80,7 @@ public class PacmanGame extends Game {
             case "Player":
                 return new PlayerStrategy(); 
             default:
-                return new EatAndRunStrategy(this); 
+                return new PlayerStrategy(); 
         }
     }
     
@@ -95,6 +100,7 @@ public class PacmanGame extends Game {
 
     @Override
     public void initializeGame() {   
+        life = 2;
         this.pacmans = new ArrayList<>(); 
         this.ghosts = new ArrayList<>();   
         ArrayList<PositionAgent> pacman_start = maze.getPacman_start();
@@ -203,6 +209,28 @@ public class PacmanGame extends Game {
                     .collect(Collectors.toCollection(ArrayList::new));
     }
 
+    public boolean isPacmanCatched(){
+        if(life > 0 && areGhostsAndPacmansInSamePosition()){
+            life--;
+            PropertyChangeSupport.firePropertyChange("moveAgent", null, pacmans);
+            for(int i = 0; i < pacmans.size(); i++){
+                PositionAgent startPosition = maze.getPacman_start().get(i);
+                PositionAgent newPosition = new PositionAgent(startPosition.getX(), startPosition.getY(), startPosition.getDir());
+                pacmans.get(i).setPosition(newPosition);
+                pacmans.get(i).getStrategy().setPosition(newPosition);
+            }
+            
+            for(int i = 0; i < ghosts.size(); i++){
+                PositionAgent startPosition = maze.getGhosts_start().get(i);
+                PositionAgent newPosition = new PositionAgent(startPosition.getX(), startPosition.getY(), startPosition.getDir());
+                ghosts.get(i).setPosition(newPosition);
+                ghosts.get(i).getStrategy().setPosition(newPosition);
+            }
+            return true;
+        }
+        return false;
+    }
+
     @Override
     public void takeTurn() {
         if(this.timer > 0){
@@ -217,11 +245,11 @@ public class PacmanGame extends Game {
         }
 
         ArrayList<PositionAgent> newPacmanPositions = moveAllAgents(pacmans);
-        if(!gameOver()){
+        if(!gameOver() && !isPacmanCatched()){
             PropertyChangeSupport.firePropertyChange("moveAgent", null, newPacmanPositions);
         }
         ArrayList<PositionAgent> newGhostPositions = moveAllAgents(ghosts);
-        if(!gameOver()){
+        if(!gameOver() && !isPacmanCatched()){
             PropertyChangeSupport.firePropertyChange("moveAgent", null, newGhostPositions);
         }
     }
@@ -240,9 +268,11 @@ public class PacmanGame extends Game {
 
     @Override
     public boolean gameOver() {
-        boolean isGameOver = areGhostsAndPacmansInSamePosition() && this.timer == 0;
+        boolean isGameOver = areGhostsAndPacmansInSamePosition() && this.timer == 0 && life == 0;
         if(isGameOver){
             this.pause();
+            JOptionPane.showMessageDialog(null, "Game Over");
+            System.exit(0);
         }
         return isGameOver;
     }

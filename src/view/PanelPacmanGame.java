@@ -1,11 +1,13 @@
 package src.view;
 
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.util.ArrayList;
 import javax.swing.JPanel;
 
 import src.modele.Maze;
+import src.modele.PacmanGame;
 import src.modele.PositionAgent;
 
 
@@ -108,6 +110,17 @@ public class PanelPacmanGame extends JPanel {
 			}
 			posx += stepx;
 		}
+
+		g.setColor(Color.YELLOW);
+
+		int pacmanSize = 20; 
+		int spacing = 5;     
+		int startX = 5;     
+		int startY = 5;     
+		for (int i = 0; i < PacmanGame.getNumberOfLife() + 1; i++) {
+			g.fillArc(startX + (i * (pacmanSize + spacing)), startY, pacmanSize, pacmanSize, 45, 270);
+		}
+
 
 		for (int i = 0; i < pacmans_pos.size(); i++) {
 			PositionAgent pos = pacmans_pos.get(i);

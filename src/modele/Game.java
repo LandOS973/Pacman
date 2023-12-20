@@ -54,7 +54,7 @@ public abstract class Game implements Runnable {
     
     public void launch() {
         if (isRunning) {
-            stopGame(); // Arrête le thread en cours d'exécution avant d'en démarrer un nouveau
+            stopGame();
         }
         isRunning = true;
         thread = new Thread(this);

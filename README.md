@@ -48,6 +48,13 @@ Algorithme A* pour les déplacements des fantômes.
 
 L'algorithme A* est utilisé pour calculer les déplacements des fantômes, les dirigeant de manière intelligente vers le Pacman. Cette approche améliore le défi et la jouabilité en rendant les fantômes plus stratégiques.
 
+## Amélioration du jeu
+
+Gestion du nombre de vies du joueur.
+
+## Amélioration de l'interface graphique
+
+Maintenant, pacman ouvre et ferme la bouche, et on a un affichage du nombre de vies restantes sous forme de pacman en haut à gauche de la fenêtre
 
 ## Comment Jouer
 

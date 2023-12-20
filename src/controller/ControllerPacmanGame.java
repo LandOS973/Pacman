@@ -8,8 +8,8 @@ public class ControllerPacmanGame extends AbstractController{
 
     public ControllerPacmanGame(PacmanGame game) {
         super(game);
-        new ViewPacmanGame(game);
         new ViewCommand(game, this);
+        new ViewPacmanGame(game);
         game.launch();
     }   
 }
