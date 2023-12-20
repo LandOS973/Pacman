@@ -34,6 +34,10 @@ Utilisé pour créer des instances d'agents (Pacman et fantômes).
 
 Appliqué pour la gestion de l'instance unique du jeu.
 
+## Etat 
+
+Gestion des états de la vue commande grâce au design pattern état.
+
 ## Caractéristiques Principales
 
 Jeu Pacman avec interface graphique.
@@ -43,6 +47,7 @@ Algorithme A* pour les déplacements des fantômes.
 ## Algorithme A* pour les Fantômes
 
 L'algorithme A* est utilisé pour calculer les déplacements des fantômes, les dirigeant de manière intelligente vers le Pacman. Cette approche améliore le défi et la jouabilité en rendant les fantômes plus stratégiques.
+
 
 ## Comment Jouer
 
