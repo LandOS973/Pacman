@@ -1,6 +1,7 @@
 package src.modele;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.stream.Collectors;
 
 import javax.swing.JFileChooser;
@@ -18,6 +19,10 @@ import src.modele.Agents.Strategy.Ghost.RunAwayStrategy;
 import src.modele.Agents.Strategy.Pacman.EatAndRunStrategy;
 import src.modele.Agents.Strategy.Pacman.PlayerStrategy;
 import javax.swing.JOptionPane;
+import java.awt.Point;
+import java.util.HashMap;
+import java.util.Map;
+
 
 
 public class PacmanGame extends Game {
@@ -29,6 +34,9 @@ public class PacmanGame extends Game {
     private int timer;
     private boolean win;
     private static int life = 2;
+    private HashSet<PositionAgent> pacmanPositions;
+    private HashSet<PositionAgent> ghostPositions;
+    private Map<Point, Boolean> wallCache = new HashMap<>();
 
     private static PacmanGame instance;
 
@@ -47,6 +55,7 @@ public class PacmanGame extends Game {
         initializeGame();
     }
 
+    // design pattern singleton
     public static  synchronized PacmanGame getInstance(int maxturn, long time) {
         if (instance == null) {
             instance = new PacmanGame(maxturn, time);
@@ -103,20 +112,20 @@ public class PacmanGame extends Game {
         life = 2;
         this.pacmans = new ArrayList<>(); 
         this.ghosts = new ArrayList<>();   
-        ArrayList<PositionAgent> pacman_start = maze.getPacman_start();
-        ArrayList<PositionAgent> ghosts_start = maze.getGhosts_start();
+        pacmanPositions = new HashSet<>(maze.getPacman_start());
+        ghostPositions = new HashSet<>(maze.getGhosts_start());
         AgentFactory pacmanFactory = new PacmanFactory();
         AgentFactory ghostFactory = new GhostFactory();
 
         AgentStrategy pacmanStrategy = askPacmanStrategy();
 
-        for (PositionAgent pos : pacman_start) {
+        for (PositionAgent pos : pacmanPositions) {
             this.pacmans.add(pacmanFactory.createAgent(
                 new PositionAgent(pos.getX(), pos.getY(), pos.getDir()), 
                 pacmanStrategy));
         }
 
-        for (PositionAgent pos : ghosts_start) {
+        for (PositionAgent pos : ghostPositions) {
             this.ghosts.add(ghostFactory.createAgent(
                 (new PositionAgent(pos.getX(), pos.getY(), pos.getDir())), 
                 new AStarStrategy(this)));
@@ -124,7 +133,13 @@ public class PacmanGame extends Game {
     }
 
     public boolean isLegalMove(int nextX, int nextY) {
-        return !maze.isWall(nextX, nextY);
+        Point pos = new Point(nextX, nextY);
+        if (wallCache.containsKey(pos)) {
+            return !wallCache.get(pos);
+        }
+        boolean isWall = maze.isWall(nextX, nextY);
+        wallCache.put(pos, isWall);
+        return !isWall;
     }
     
     public boolean isAtSamePosition(PositionAgent pos1, PositionAgent pos2) {
@@ -169,6 +184,11 @@ public class PacmanGame extends Game {
                 break;
         }
     }
+
+    private void updateAgentPositions() {
+        pacmanPositions = new HashSet<>(getPacmanPositions());
+        ghostPositions = new HashSet<>(getGhostPositions());
+    }
     
     public PositionAgent moveAgent(Agent agent) {
         AgentAction action = agent.getAction();
@@ -180,10 +200,9 @@ public class PacmanGame extends Game {
             agent.getPosition().setY(y);
             
             if (agent instanceof Pacman) {
-                Pacman pacman = (Pacman) agent;
-                eatItem(x, y, pacman, ItemType.FOOD);
-                eatItem(x, y, pacman, ItemType.CAPSULE);
-                eatItem(x, y, pacman, ItemType.GHOST);
+                eatItem(x, y, (Pacman) agent, ItemType.FOOD);
+                eatItem(x, y, (Pacman) agent, ItemType.CAPSULE);
+                eatItem(x, y, (Pacman) agent, ItemType.GHOST);
             }
         }
     
@@ -213,13 +232,14 @@ public class PacmanGame extends Game {
         if(life > 0 && areGhostsAndPacmansInSamePosition()){
             life--;
             PropertyChangeSupport.firePropertyChange("moveAgent", null, pacmans);
+            // reset positions
             for(int i = 0; i < pacmans.size(); i++){
                 PositionAgent startPosition = maze.getPacman_start().get(i);
                 PositionAgent newPosition = new PositionAgent(startPosition.getX(), startPosition.getY(), startPosition.getDir());
                 pacmans.get(i).setPosition(newPosition);
                 pacmans.get(i).getStrategy().setPosition(newPosition);
             }
-            
+            // reset positions
             for(int i = 0; i < ghosts.size(); i++){
                 PositionAgent startPosition = maze.getGhosts_start().get(i);
                 PositionAgent newPosition = new PositionAgent(startPosition.getX(), startPosition.getY(), startPosition.getDir());
@@ -245,13 +265,17 @@ public class PacmanGame extends Game {
         }
 
         ArrayList<PositionAgent> newPacmanPositions = moveAllAgents(pacmans);
+        updateAgentPositions();
         if(!gameOver() && !isPacmanCatched()){
             PropertyChangeSupport.firePropertyChange("moveAgent", null, newPacmanPositions);
         }
         ArrayList<PositionAgent> newGhostPositions = moveAllAgents(ghosts);
+        updateAgentPositions();
+
         if(!gameOver() && !isPacmanCatched()){
             PropertyChangeSupport.firePropertyChange("moveAgent", null, newGhostPositions);
         }
+        
     }
 
 
@@ -260,11 +284,16 @@ public class PacmanGame extends Game {
         return !gameOver() && !win;
     }
 
-    public boolean areGhostsAndPacmansInSamePosition(){
-        return getPacmanPositions().stream()
-            .anyMatch(pacmanPos -> getGhostPositions().stream()
-                .anyMatch(ghostPos -> isAtSamePosition(pacmanPos, ghostPos)));
+    public boolean areGhostsAndPacmansInSamePosition() {
+        updateAgentPositions();
+        for (PositionAgent pacmanPos : pacmanPositions) {
+            if (ghostPositions.contains(pacmanPos)) {
+                return true;
+            }
+        }
+        return false;
     }
+    
 
     @Override
     public boolean gameOver() {
@@ -278,9 +307,12 @@ public class PacmanGame extends Game {
     }
     
     public boolean isThereAGhost(int x, int y) {
-        ArrayList<Agent> ghostsCopy = new ArrayList<Agent>(ghosts);
-        return ghostsCopy.stream()
-                         .anyMatch(ghost -> isAtSamePosition(ghost.getPosition(), new PositionAgent(x, y, 0)));
+        for (PositionAgent ghostPos : ghostPositions) {
+            if (ghostPos.getX() == x && ghostPos.getY() == y) {
+                return true;
+            }
+        }
+        return false;
     }
     
 
